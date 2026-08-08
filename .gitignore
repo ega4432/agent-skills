@@ -1,7 +1,3 @@
-# 実行時に生成される予定データ（参加者メール・議事メモ・会議URL等の個人情報を含む）
-calendar-events-*.json
-outlook-events-*.json
-
 # Claude Code のローカル専用設定（環境ごとの上書き。共有しない）
 .claude/settings.local.json
 

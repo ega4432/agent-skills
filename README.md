@@ -11,9 +11,6 @@
 ## インストール
 
 ```bash
-# スキルを検索
-gh skill search macos-calendar
-
 # 導入前にプレビュー
 gh skill preview ega4432/agent-skills macos-calendar
 
