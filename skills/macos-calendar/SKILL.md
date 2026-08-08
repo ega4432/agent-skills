@@ -6,6 +6,7 @@ description: >
   ような依頼で使う。osascript + node を使うため Chrome や Web ログインは不要。初回実行時に
   Calendar.app 制御の TCC 許可が必要。
 license: MIT
+compatibility: macOS 専用。node と osascript（標準搭載）が必要。初回に Calendar.app 制御の TCC 許可が要る。
 ---
 
 # macOS Calendar
@@ -13,11 +14,22 @@ license: MIT
 macOS 純正 **Calendar.app** から指定日の予定を取得し、Markdown 表 + JSON アーティファクトで返す。
 Exchange 等の業務予定も Calendar.app に同期されていればネイティブに取得できる。
 
-同梱スクリプトを絶対パスで実行する:
+同梱スクリプト `calendar-events.sh` を実行する。**インストールスコープ（user / project）で
+配置先が変わる**ため、パスを決め打ちにせず以下で解決してから使う:
 
+```bash
+# スキル同梱スクリプトを user / project どちらのインストールでも解決する
+SKILL_NAME="macos-calendar"; SCRIPT_NAME="calendar-events.sh"; SCRIPT=""
+for p in \
+  "$HOME/.claude/skills/$SKILL_NAME/$SCRIPT_NAME" \
+  "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/$SKILL_NAME/$SCRIPT_NAME" \
+  "$PWD/.claude/skills/$SKILL_NAME/$SCRIPT_NAME"; do
+  [ -f "$p" ] && { SCRIPT="$p"; break; }
+done
+[ -n "$SCRIPT" ] || { echo "$SKILL_NAME スクリプト未検出。gh skill install で導入を促す。" >&2; exit 1; }
 ```
-SCRIPT="$HOME/.claude/skills/macos-calendar/calendar-events.sh"
-```
+
+以降このパスを `"$SCRIPT"` として使う。
 
 ## Prerequisites
 
@@ -26,7 +38,7 @@ SCRIPT="$HOME/.claude/skills/macos-calendar/calendar-events.sh"
 - **初回実行時**、「ターミナル（または Claude）が Calendar.app を制御することを許可しますか？」という
   TCC プロンプトが出る。許可が必要（システム設定 > プライバシーとセキュリティ > オートメーション）。
   **Claude 自身はこの許可を付与できない** — ユーザーに手動で許可してもらう。
-- `$SCRIPT` が存在すること。無ければユーザーに導入（リポジトリからの配置）を促して停止する。
+- 上記の解決で `$SCRIPT` が得られること。見つからなければ `gh skill install` での導入を促して停止する。
 
 ## Steps
 
@@ -43,7 +55,7 @@ SCRIPT="$HOME/.claude/skills/macos-calendar/calendar-events.sh"
 ### 2. スクリプトを実行する
 
 ```bash
-SCRIPT="$HOME/.claude/skills/macos-calendar/calendar-events.sh"
+# $SCRIPT は冒頭で解決したパス
 "$SCRIPT" <DATE> [--calendar <名前>] [--exclude-declined] [--me <email>] [--out-dir <dir>]
 ```
 
@@ -73,7 +85,7 @@ SCRIPT="$HOME/.claude/skills/macos-calendar/calendar-events.sh"
 | TCC 未許可でイベントが空 | 「システム設定 > プライバシー > オートメーション」で許可するよう案内。**Claude は許可できない**。 |
 | カレンダー未検出（exit 3） | 出力された利用可能一覧を提示し、`--calendar` 指定を促す。別名で勝手に再試行しない。 |
 | 実行に数十秒かかる | 大人数の会議がある日は参加者取得で時間がかかる。正常挙動として待つ。 |
-| `$SCRIPT` が無い | スキルが正しく配置されていない。導入手順を案内して停止。 |
+| `$SCRIPT` 未検出 | user/project どちらにも配置が無い。`gh skill install ega4432/agent-skills macos-calendar` を案内して停止。 |
 
 ## Non-goals
 
