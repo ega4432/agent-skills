@@ -5,6 +5,7 @@ description: >
   予定を取得する。「今日の予定を教えて」「昨日のカレンダー見せて」「Mac の予定表を確認して」の
   ような依頼で使う。osascript + node を使うため Chrome や Web ログインは不要。初回実行時に
   Calendar.app 制御の TCC 許可が必要。
+license: MIT
 ---
 
 # macOS Calendar
