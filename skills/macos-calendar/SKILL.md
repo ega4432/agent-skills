@@ -14,18 +14,37 @@ compatibility: macOS 専用。node と osascript（標準搭載）が必要。�
 macOS 純正 **Calendar.app** から指定日の予定を取得し、Markdown 表 + JSON アーティファクトで返す。
 Exchange 等の業務予定も Calendar.app に同期されていればネイティブに取得できる。
 
-同梱スクリプト `calendar-events.sh` を実行する。**インストールスコープ（user / project）で
-配置先が変わる**ため、パスを決め打ちにせず以下で解決してから使う:
+同梱スクリプト `calendar-events.sh` は**この SKILL.md と同じディレクトリ**に置かれている。
+まずスキル自身のディレクトリの絶対パスが分かるなら、その `calendar-events.sh` をそのまま使う
+（`$CLAUDE_PLUGIN_ROOT` 等ホストが与える値があればそれも使ってよい）。
+
+分からない場合は、**ホスト／スコープ非依存**の次のスニペットで解決する。`gh skill install` は
+Claude Code 以外（Cursor / Codex / Copilot / Gemini CLI など）にも入り、配置先は
+`.claude/skills/`・`.agents/skills/`・`~/.<host>/skills/` などホストごとに異なるため、複数候補を
+探索してから最後に `find` でフォールバックする:
 
 ```bash
-# スキル同梱スクリプトを user / project どちらのインストールでも解決する
 SKILL_NAME="macos-calendar"; SCRIPT_NAME="calendar-events.sh"; SCRIPT=""
-for p in \
-  "$HOME/.claude/skills/$SKILL_NAME/$SCRIPT_NAME" \
-  "$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/$SKILL_NAME/$SCRIPT_NAME" \
-  "$PWD/.claude/skills/$SKILL_NAME/$SCRIPT_NAME"; do
-  [ -f "$p" ] && { SCRIPT="$p"; break; }
+GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+shopt -s nullglob 2>/dev/null || true
+
+# 1) 既知のスキルルートを優先探索（project: .claude/.agents 等、user: ~/.<host>/skills）
+for cand in \
+  ${CLAUDE_PLUGIN_ROOT:+"$CLAUDE_PLUGIN_ROOT/$SCRIPT_NAME"} \
+  ${GIT_ROOT:+"$GIT_ROOT/.claude/skills/$SKILL_NAME/$SCRIPT_NAME"} \
+  ${GIT_ROOT:+"$GIT_ROOT/.agents/skills/$SKILL_NAME/$SCRIPT_NAME"} \
+  "$PWD/.claude/skills/$SKILL_NAME/$SCRIPT_NAME" \
+  "$PWD/.agents/skills/$SKILL_NAME/$SCRIPT_NAME" \
+  "$HOME"/.*/skills/"$SKILL_NAME/$SCRIPT_NAME" \
+  "$HOME"/.config/*/skills/"$SKILL_NAME/$SCRIPT_NAME"; do
+  [ -f "$cand" ] && { SCRIPT="$cand"; break; }
 done
+
+# 2) 最終フォールバック: プロジェクト配下を bounded find
+if [ -z "$SCRIPT" ]; then
+  SCRIPT="$(find "${GIT_ROOT:-$PWD}" -maxdepth 6 -type f -name "$SCRIPT_NAME" -path "*/$SKILL_NAME/*" 2>/dev/null | head -n1)"
+fi
+
 [ -n "$SCRIPT" ] || { echo "$SKILL_NAME スクリプト未検出。gh skill install で導入を促す。" >&2; exit 1; }
 ```
 
