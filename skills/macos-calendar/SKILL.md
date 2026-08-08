@@ -14,9 +14,10 @@ compatibility: macOS 専用。node と osascript（標準搭載）が必要。�
 macOS 純正 **Calendar.app** から指定日の予定を取得し、Markdown 表 + JSON アーティファクトで返す。
 Exchange 等の業務予定も Calendar.app に同期されていればネイティブに取得できる。
 
-同梱スクリプト `calendar-events.sh` は**この SKILL.md と同じディレクトリ**に置かれている。
-まずスキル自身のディレクトリの絶対パスが分かるなら、その `calendar-events.sh` をそのまま使う
-（`$CLAUDE_PLUGIN_ROOT` 等ホストが与える値があればそれも使ってよい）。
+実行スクリプトは**このスキル内の `scripts/calendar-events.sh`**（SKILL.md からの相対パス）に
+同梱されている。まずスキル自身のディレクトリの絶対パスが分かるなら、その
+`scripts/calendar-events.sh` をそのまま使う（`$CLAUDE_PLUGIN_ROOT` 等ホストが与える値があれば
+それも使ってよい）。
 
 分からない場合は、**ホスト／スコープ非依存**の次のスニペットで解決する。`gh skill install` は
 Claude Code 以外（Cursor / Codex / Copilot / Gemini CLI など）にも入り、配置先は
@@ -24,25 +25,25 @@ Claude Code 以外（Cursor / Codex / Copilot / Gemini CLI など）にも入り
 探索してから最後に `find` でフォールバックする:
 
 ```bash
-SKILL_NAME="macos-calendar"; SCRIPT_NAME="calendar-events.sh"; SCRIPT=""
+SKILL_NAME="macos-calendar"; REL="scripts/calendar-events.sh"; SCRIPT=""
 GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 shopt -s nullglob 2>/dev/null || true
 
 # 1) 既知のスキルルートを優先探索（project: .claude/.agents 等、user: ~/.<host>/skills）
 for cand in \
-  ${CLAUDE_PLUGIN_ROOT:+"$CLAUDE_PLUGIN_ROOT/$SCRIPT_NAME"} \
-  ${GIT_ROOT:+"$GIT_ROOT/.claude/skills/$SKILL_NAME/$SCRIPT_NAME"} \
-  ${GIT_ROOT:+"$GIT_ROOT/.agents/skills/$SKILL_NAME/$SCRIPT_NAME"} \
-  "$PWD/.claude/skills/$SKILL_NAME/$SCRIPT_NAME" \
-  "$PWD/.agents/skills/$SKILL_NAME/$SCRIPT_NAME" \
-  "$HOME"/.*/skills/"$SKILL_NAME/$SCRIPT_NAME" \
-  "$HOME"/.config/*/skills/"$SKILL_NAME/$SCRIPT_NAME"; do
+  ${CLAUDE_PLUGIN_ROOT:+"$CLAUDE_PLUGIN_ROOT/$REL"} \
+  ${GIT_ROOT:+"$GIT_ROOT/.claude/skills/$SKILL_NAME/$REL"} \
+  ${GIT_ROOT:+"$GIT_ROOT/.agents/skills/$SKILL_NAME/$REL"} \
+  "$PWD/.claude/skills/$SKILL_NAME/$REL" \
+  "$PWD/.agents/skills/$SKILL_NAME/$REL" \
+  "$HOME"/.*/skills/"$SKILL_NAME/$REL" \
+  "$HOME"/.config/*/skills/"$SKILL_NAME/$REL"; do
   [ -f "$cand" ] && { SCRIPT="$cand"; break; }
 done
 
 # 2) 最終フォールバック: プロジェクト配下を bounded find
 if [ -z "$SCRIPT" ]; then
-  SCRIPT="$(find "${GIT_ROOT:-$PWD}" -maxdepth 6 -type f -name "$SCRIPT_NAME" -path "*/$SKILL_NAME/*" 2>/dev/null | head -n1)"
+  SCRIPT="$(find "${GIT_ROOT:-$PWD}" -maxdepth 7 -type f -name "calendar-events.sh" -path "*/$SKILL_NAME/scripts/*" 2>/dev/null | head -n1)"
 fi
 
 [ -n "$SCRIPT" ] || { echo "$SKILL_NAME スクリプト未検出。gh skill install で導入を促す。" >&2; exit 1; }
